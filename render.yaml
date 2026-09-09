@@ -12,8 +12,16 @@ services:
       - key: BOT_TOKEN
         sync: false
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: nara-db
+          property: connectionString
       - key: GROQ_API_KEY
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+
+databases:
+  - name: nara-db
+    plan: free
+    databaseName: tracker_bot
+    user: nara
