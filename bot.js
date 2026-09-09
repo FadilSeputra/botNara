@@ -10,6 +10,12 @@ if (!process.env.BOT_TOKEN) {
 }
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+const OWNER_ID = String(process.env.OWNER_TELEGRAM_ID || '');
+const SOUL = fs.readFileSync(path.join(__dirname, 'soul.md'), 'utf8');
+bot.use((ctx, next) => {
+  if (!OWNER_ID || String(ctx.from?.id) !== OWNER_ID) return ctx.reply('Akses ditolak.');
+  return next();
+});
 bot.catch((err, ctx) => console.error('bot error', ctx?.updateType, err.message?.slice(0,200)));
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -521,7 +527,7 @@ bot.command('ask', async (ctx) => {
     return ctx.reply(`Untuk analisa saham langsung pakai /stock ya, bukan /ask.\n\nFormat: /stock <ticker>\nContoh: /stock BBCA  atau  /stock BBCA.JK TLKM.JK\n\nHasil: harga live, SMA5/20, RSI14, Wyckoff Phase (Akumulasi/Distribusi/Markup/Markdown), corporate action, bukan advice AI ngarang.\nCoba sekarang: /stock BBCA`);
   }
   const contextStr = `Transaksi 20 terakhir:\n${JSON.stringify(txResult.rows)}\n\nAgregat Income per kategori:\n${JSON.stringify(aggIncome.rows)}\nAgregat Expense per kategori:\n${JSON.stringify(aggExpense.rows)}\n\nAktivitas 20 terakhir:\n${JSON.stringify(actResult.rows)}\n\nSkill logs 10 terakhir (streak ${streak} hari):\n${JSON.stringify(skillRes.rows)}`;
-  const fullPrompt = `Kamu Nara-Bot, asisten pribadi Nara (fresh graduate). Role: teman produktif, bukan robot formal.\nAturan:\n- Jawab Bahasa Indonesia santai.\n- Format uang pakai IDR (Rp).\n- Jika data tidak ada di konteks, bilang "data belum ada" jangan ngarang angka.\n- Jika ditanya ringkasan, pakai agregat per kategori + streak.\n- Maksimal 5 kalimat, actionable.\n\nKonteks Data User:\n${contextStr}\n\nPertanyaan User: ${prompt}`;
+  const fullPrompt = `${SOUL}\n\nKamu Nara-Bot, asisten pribadi Nara (fresh graduate). Role: teman produktif, bukan robot formal.\nAturan:\n- Jawab Bahasa Indonesia santai.\n- Format uang pakai IDR (Rp).\n- Jika data tidak ada di konteks, bilang "data belum ada" jangan ngarang angka.\n- Jika ditanya ringkasan, pakai agregat per kategori + streak.\n- Maksimal 5 kalimat, actionable.\n\nKonteks Data User:\n${contextStr}\n\nPertanyaan User: ${prompt}`;
   const reply = await generateCreativeReply(
     fullPrompt,
     `AI lagi offline. Pertanyaan lu: "${prompt.slice(0,120)}". Coba lagi nanti. Sementara catat target kubernetes via /skill_log kubernetes: <materi hari ini>.`
